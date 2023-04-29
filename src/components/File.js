@@ -11,6 +11,7 @@ export default function File({ file }) {
   return (
     <div>
       <DocViewer
+        prefetchMethod="GET"
         pluginRenderers={DocViewerRenderers}
         documents={selectedDocs.map((f) => {
           return {
