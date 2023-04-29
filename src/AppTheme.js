@@ -49,6 +49,13 @@ function AppTheme({ children }) {
     return createTheme({
       direction: dir,
       typography,
+      components: {
+        MuiAppBar: {
+          colorPrimary: {
+            backgroundColor: "red",
+          },
+        },
+      },
     });
   }, [dir, colorMode]);
 
@@ -69,10 +76,10 @@ function AppTheme({ children }) {
   }, [dir]);
 
   useEffect(() => {
-    async function fetchLang(){
+    async function fetchLang() {
       await toggleLanguage({ value: language });
     }
-    fetchLang()
+    fetchLang();
   }, []);
 
   const toggleColorMode = () =>

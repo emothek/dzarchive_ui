@@ -458,6 +458,7 @@ export default function Files(props) {
       withCredentials: true,
       headers: { Authorization: `Bearer ${token}` },
     }).then((res) => {
+      console.log(res.data);
       setFile(res.data);
       setType(res.data.title.split(".").pop());
       console.log(type);
@@ -642,7 +643,7 @@ export default function Files(props) {
                             onClick={async () => {
                               await getFile(f.id);
 
-                              const res = await fetch(
+                              const res = await Axios.get(
                                 process.env.REACT_APP_HOSTNAME +
                                   `/file/view/${f.id}`,
                                 {
@@ -650,8 +651,10 @@ export default function Files(props) {
                                   headers: { Authorization: `Bearer ${token}` },
                                 }
                               );
-                              const blob = await res.blob();
-                              setPath(blob);
+
+                              // console.log(res.data);
+                              // const blob = await res.blob();
+                              setPath(res.data);
                               handleShow();
                             }}
                           >

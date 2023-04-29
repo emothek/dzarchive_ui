@@ -12,9 +12,11 @@ export default function File({ file }) {
     <div>
       <DocViewer
         pluginRenderers={DocViewerRenderers}
-        documents={selectedDocs.map((f) => ({
-          uri: window.URL.createObjectURL(f),
-        }))}
+        documents={selectedDocs.map((f) => {
+          return {
+            uri: f,
+          };
+        })}
         config={{
           header: {
             disableHeader: true,

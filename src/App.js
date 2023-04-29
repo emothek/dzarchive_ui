@@ -63,12 +63,14 @@ function App() {
 
   return userContext.token === null ? (
     <BrowserRouter>
-      <Routes>
-        <Route exact path="/" element={<Login />} />
-        <Route exact path="/login" element={<Login />} />
-        <Route exact path="/signup" element={<Signup />} />
-        <Route exact path="/superadmin/create" element={<SignupSa />} />
-      </Routes>
+      <AppTheme>
+        <Routes>
+          <Route exact path="/" element={<Login />} />
+          <Route exact path="/login" element={<Login />} />
+          <Route exact path="/signup" element={<Signup />} />
+          <Route exact path="/superadmin/create" element={<SignupSa />} />
+        </Routes>
+      </AppTheme>
     </BrowserRouter>
   ) : userContext.token ? (
     <BrowserRouter>

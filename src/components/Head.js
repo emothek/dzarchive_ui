@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 
 import Content from "./Content";
 import Files from "./Files";
-import { Box } from "@mui/material";
+import { Box, useTheme } from "@mui/material";
 
 const lightColor = "rgba(255, 255, 255, 0.7)";
 
@@ -35,9 +35,11 @@ function Head(props) {
     setIndex(i);
   };
 
+  const theme = useTheme();
+
   return (
     <React.Fragment>
-      <AppBar color="primary" position="sticky" elevation={0}>
+      <AppBar color="primary" position="sticky">
         <Toolbar>
           <Grid container spacing={1} alignItems="center">
             <Grid sx={{ display: { sm: "none", xs: "block" } }} item>
@@ -101,7 +103,7 @@ function Head(props) {
         <Toolbar>
           <Grid container alignItems="center" spacing={1}>
             <Grid item xs>
-              <Typography color="inherit" variant="h5" component="h1">
+              <Typography color="inherit" variant="h4" component="h1">
                 {t("Archiving")}
               </Typography>
             </Grid>

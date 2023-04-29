@@ -246,7 +246,7 @@ export default function Content(props) {
                 <Box
                   component="form"
                   sx={{
-                    "& .MuiTextField-root": { m: 1, width: "25ch" },
+                    "& .MuiTextField-root": { m: 1, width: "50ch" },
                   }}
                   noValidate
                   autoComplete="off"
@@ -268,6 +268,8 @@ export default function Content(props) {
                         value={formValues.nArticle}
                         onChange={handleInputChange}
                       />
+                    </Grid>
+                    <Grid item>
                       <TextField
                         id="title-input"
                         name="title"
@@ -297,6 +299,8 @@ export default function Content(props) {
                           />
                         </DemoContainer>
                       </LocalizationProvider>
+                    </Grid>
+                    <Grid item>
                       <TextField
                         required
                         multiline
@@ -307,7 +311,8 @@ export default function Content(props) {
                         value={formValues.description}
                         onChange={handleInputChange}
                       />
-
+                    </Grid>
+                    <Grid item>
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DemoContainer components={["DatePicker"]}>
                           <DatePicker
@@ -326,7 +331,8 @@ export default function Content(props) {
                           />
                         </DemoContainer>
                       </LocalizationProvider>
-
+                    </Grid>
+                    <Grid item>
                       <TextField
                         required
                         multiline
@@ -357,9 +363,16 @@ export default function Content(props) {
                         </TextField>
                       )}
                     </Grid>
-                    <Button variant="contained" color="primary" type="submit">
-                      Enregistrer
-                    </Button>
+                    <Grid item>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        type="submit"
+                        sx={{ width: "50ch", marginTop: 2 }}
+                      >
+                        Enregistrer
+                      </Button>
+                    </Grid>
                   </Grid>
                 </Box>{" "}
               </div>
