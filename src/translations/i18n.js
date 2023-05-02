@@ -54,6 +54,8 @@ const resources = {
       "Search By Date": "البحث عن تاريخ",
       Logout: "خروج",
       Description: "وصف",
+      EditInformation: "تعديل",
+      Preview: "عرض",
     },
   },
   fr: {
@@ -105,6 +107,8 @@ const resources = {
       validate: "valider",
       "Search By Date": "Recherche par date",
       Logout: "Déconnecter",
+      EditInformation: "Modification",
+      Preview: "Aperçu",
     },
   },
 };

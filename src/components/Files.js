@@ -30,6 +30,11 @@ import {
   Toolbar,
   Tooltip,
   Typography,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  Radio,
+  RadioGroup,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FilterListIcon from "@mui/icons-material/FilterList";
@@ -40,6 +45,11 @@ import { useTranslation } from "react-i18next";
 import { visuallyHidden } from "@mui/utils";
 import PropTypes from "prop-types";
 import * as dayjs from "dayjs";
+import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
 import File from "./File";
 import FileOpenIcon from "@mui/icons-material/FileOpen";
 import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
@@ -47,6 +57,8 @@ import "react-date-range/dist/styles.css"; // main style file
 import "react-date-range/dist/theme/default.css"; // theme css file
 import { DateRange } from "react-date-range";
 import { CirclePicker } from "react-color";
+import EditIcon from "@mui/icons-material/Edit";
+import Highlighter from "react-highlight-words";
 const download = require("downloadjs");
 
 function descendingComparator(a, b, orderBy) {
@@ -123,6 +135,7 @@ function EnhancedTableHead(props) {
     numSelected,
     rowCount,
     onRequestSort,
+    result,
   } = props;
   const { t } = useTranslation();
   const createSortHandler = (property) => (event) => {
@@ -165,6 +178,7 @@ function EnhancedTableHead(props) {
           </TableCell>
         ))}
         <TableCell>{t("Tags")}</TableCell>
+        {result && <TableCell>{t("Preview")}</TableCell>}
         <TableCell>{t("Action")}</TableCell>
       </TableRow>
     </TableHead>
@@ -264,12 +278,15 @@ EnhancedTableToolbar.propTypes = {
 export default function Files(props) {
   const { token, user, tagName, tagExist } = props;
   const [files, setFiles] = useState([]);
+  const [boites, setBoites] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [file, setFile] = useState(null);
   const [type, setType] = useState("");
   const [path, setPath] = useState(null);
   const [showFile, setShowFile] = useState(false);
   const [open, setOpen] = useState(false);
   const [openT, setOpenT] = useState(false);
+  const [openEf, setOpenEf] = useState(false);
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("");
   const [selected, setSelected] = useState([]);
@@ -279,6 +296,7 @@ export default function Files(props) {
   const [searchItem, setSearchItem] = useState("");
   const [dateType, setDateType] = useState("");
   const { t } = useTranslation();
+  const filter = createFilterOptions();
   const [state, setState] = useState([
     {
       startDate: new Date(),
@@ -297,6 +315,31 @@ export default function Files(props) {
   const [note, setNote] = useState("");
   const [tagId, setTagId] = useState(null);
   const [openForm, setOpenForm] = useState(false);
+  const [result, setResult] = useState(null);
+  const [formValues, setFormValues] = useState({
+    nArticle: file?.nArticle,
+    description: file?.description,
+    dateExtreme: file?.dateExtreme,
+    dateElimination: file?.dateElimination,
+    observation: file?.observation,
+    boiteId: 0,
+    type_doc: file?.type_doc,
+    categoryId: file?.categorie?.id,
+  });
+
+  // useEffect(() => {
+  //   setFormValues((prevState) => ({
+  //     ...prevState,
+  //     nArticle: file?.nArticle,
+  //     description: file?.description,
+  //     dateExtreme: file?.dateExtreme,
+  //     dateElimination: file?.dateElimination,
+  //     observation: file?.observation,
+  //     boiteId: 0,
+  //     type_doc: file?.type_doc,
+  //     categoryId: file?.categorie?.id,
+  //   }));
+  // }, [file]);
 
   useEffect(() => {
     if (tagExist) {
@@ -309,6 +352,7 @@ export default function Files(props) {
           .filter((item) => item.tags.length > 0)
       );
     } else if (searchItem === "") {
+      setResult(null);
       Axios.get(process.env.REACT_APP_HOSTNAME + "/files", {
         withCredentials: true,
         headers: { Authorization: `Bearer ${token}` },
@@ -326,7 +370,24 @@ export default function Files(props) {
       }).then((res) => {
         setTags(res.data);
       });
-  }, [token, searchItem, tagExist, tagName, openT]);
+
+    if (openEf) {
+      Axios.get(process.env.REACT_APP_HOSTNAME + "/boitesByOrganisation", {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((res) => {
+        //console.log(res.data)
+        setBoites(res.data);
+      });
+      Axios.get(process.env.REACT_APP_HOSTNAME + "/categories", {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((res) => {
+        //console.log(res.data)
+        setCategories(res.data);
+      });
+    }
+  }, [token, searchItem, tagExist, tagName, openT, openEf]);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -388,8 +449,12 @@ export default function Files(props) {
         { withCredentials: true, headers: { Authorization: `Bearer ${token}` } }
       )
         .then((res) => {
-          if (res.data.length > 0) setFilterFt(res.data);
-          else {
+          console.log(res);
+          if (res.data.files.length) {
+            setFilterFt(res.data.files);
+            setResult(res.data.result);
+            console.log(res);
+          } else {
             alert("Aucun resultat !");
           }
         })
@@ -407,6 +472,29 @@ export default function Files(props) {
   };
   const handleCloseT = () => {
     setOpenT(false);
+  };
+  const handleCloseEf = () => {
+    setOpenEf(false);
+  };
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormValues({
+      ...formValues,
+      [name]: value,
+    });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    console.log(formValues);
+
+    Axios.put(process.env.REACT_APP_HOSTNAME + `/file/${file.id}`, formValues, {
+      withCredentials: true,
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => alert("Fichier modifié !"))
+      .catch((err) => alert("Erreur"));
   };
 
   const SearchDate = async () => {
@@ -458,11 +546,24 @@ export default function Files(props) {
       withCredentials: true,
       headers: { Authorization: `Bearer ${token}` },
     }).then((res) => {
-      console.log(res.data);
       setFile(res.data);
       setType(res.data.title.split(".").pop());
       console.log(type);
     });
+  };
+  const createCategory = async (categorie) => {
+    await Axios.post(
+      process.env.REACT_APP_HOSTNAME + "/category",
+      { categorie },
+      {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    )
+      .then((res) => {
+        alert(res.data.name + " catégorie créee");
+      })
+      .catch((error) => alert("Erreur"));
   };
 
   return (
@@ -555,6 +656,7 @@ export default function Files(props) {
                 onSelectAllClick={handleSelectAllClick}
                 onRequestSort={handleRequestSort}
                 rowCount={files.length}
+                result={result}
               />
               <TableBody>
                 {stableSort(filterFt, getComparator(order, orderBy))
@@ -562,6 +664,12 @@ export default function Files(props) {
                   .map((f, index) => {
                     const isItemSelected = isSelected(f.id);
                     const labelId = `enhanced-table-checkbox-${index}`;
+
+                    let textToHighlight = result
+                      ? "".concat(
+                          result.map((r) => r.titre === f.title && r.line)
+                        )
+                      : " test ";
 
                     return (
                       <TableRow
@@ -591,12 +699,15 @@ export default function Files(props) {
                         >
                           <FileIcon /> {f.title}
                         </TableCell>
-                        <TableCell>{f.nArticle}</TableCell>
+
+                        <TableCell align="right">
+                          {f.boite ? f.boite.nbSalle : "Aucune"}
+                        </TableCell>
                         <TableCell align="right">
                           {f.boite ? f.boite.nbBoite : "Aucune"}
                         </TableCell>
-                        <TableCell align="right">
-                          {f.boite ? f.boite.nbSalle : "Aucune"}
+                        <TableCell>
+                          {f.nArticle !== "" ? f.nArticle : f.id}
                         </TableCell>
                         <TableCell align="right">
                           {dayjs(f.dateExtreme || new Date()).format(
@@ -638,7 +749,19 @@ export default function Files(props) {
                               );
                             })}
                         </TableCell>
-                        <TableCell align="right">
+                        {result && (
+                          <TableCell>
+                            <Card sx={{ p: 1 }}>
+                              <Highlighter
+                                highlightClassName="YourHighlightClass"
+                                searchWords={[searchItem]}
+                                autoEscape={true}
+                                textToHighlight={textToHighlight}
+                              />
+                            </Card>
+                          </TableCell>
+                        )}
+                        <TableCell sx={{ display: "flex", flex: "wrap" }}>
                           <IconButton
                             onClick={async () => {
                               await getFile(f.id);
@@ -652,8 +775,8 @@ export default function Files(props) {
                                 }
                               );
 
-                              // console.log(res.data);
-                              // const blob = await res.blob();
+                              console.log(res);
+                              //const blob = await res.blob();
                               setPath(res.data);
                               handleShow();
                             }}
@@ -670,6 +793,15 @@ export default function Files(props) {
                             }}
                           >
                             <BookmarkAddIcon titleAccess={t("Add Tag")} />
+                          </IconButton>
+                          <IconButton
+                            onClick={async () => {
+                              await getFile(f.id);
+                              console.log(file);
+                              setOpenEf(true);
+                            }}
+                          >
+                            <EditIcon titleAccess={t("EditInformation")} />
                           </IconButton>
                         </TableCell>
                       </TableRow>
@@ -693,7 +825,7 @@ export default function Files(props) {
               <br />
               <Grid>
                 {tags && tags.length > 0 && !openForm ? (
-                  <Grid item>
+                  <Grid item sx={{ display: "flex", flex: "wrap" }}>
                     <TextField
                       required
                       fullWidth
@@ -878,15 +1010,56 @@ export default function Files(props) {
               </Card>
 
               <List>
+                {file.tags &&
+                  file.tags.map((data) => {
+                    return (
+                      <ListItem key={data.id}>
+                        <Chip
+                          sx={{ bgcolor: data.color, color: "white" }}
+                          label={data.tag_name}
+                          size="small"
+                          onDelete={async () => {
+                            let id = data.id;
+                            await Axios.post(
+                              process.env.REACT_APP_HOSTNAME +
+                                `/tag/remove/${file.id}`,
+                              { id },
+                              {
+                                withCredentials: true,
+                                headers: {
+                                  Authorization: `Bearer ${token}`,
+                                },
+                              }
+                            ).then((res) => {
+                              alert(res.data);
+                            });
+                          }}
+                        />
+                      </ListItem>
+                    );
+                  })}
                 <ListItem>
                   <ListItemText primary={"Titre"} secondary={file.title} />
                 </ListItem>
                 <ListItem>
                   <ListItemText
                     primary={"N Article"}
-                    secondary={file.nArticle}
+                    secondary={file.nArticle ? file.nArticle : file.id}
                   />
                 </ListItem>
+                {file.category && (
+                  <ListItem>
+                    <ListItemText
+                      primary={"Catégorie"}
+                      secondary={file.category.name}
+                    />
+                  </ListItem>
+                )}
+                {file.type && (
+                  <ListItem>
+                    <ListItemText primary={"Type"} secondary={file.type} />
+                  </ListItem>
+                )}
                 <ListItem>
                   <ListItemText
                     primary={"Description"}
@@ -931,22 +1104,245 @@ export default function Files(props) {
                     )}
                   />
                 </ListItem>
-                <ListItem>
-                  <ListItemText
-                    primary={"Boite"}
-                    secondary={
-                      "N " +
-                      file.boite.nbBoite +
-                      " " +
-                      "Salle " +
-                      file.boite.nbSalle
-                    }
-                  />
-                </ListItem>
+                {file.boite && (
+                  <ListItem>
+                    <ListItemText
+                      primary={"Boite"}
+                      secondary={
+                        "N " +
+                        file.boite.nbBoite +
+                        " " +
+                        "Salle " +
+                        file.boite.nbSalle
+                      }
+                    />
+                  </ListItem>
+                )}
               </List>
             </Box>
           </Grid>
         </Grid>
+      )}
+      {openEf && (
+        <Dialog open={openEf} onClose={handleCloseEf}>
+          <DialogTitle>{t("EditInformation")}</DialogTitle>
+          <DialogContent>
+            <Box
+              component="form"
+              sx={{
+                "& .MuiTextField-root": { m: 1, width: "25ch" },
+              }}
+              noValidate
+              autoComplete="off"
+              onSubmit={handleSubmit}
+            >
+              <Grid
+                container
+                alignItems="center"
+                justify="center"
+                direction="column"
+              >
+                <Grid item>
+                  <TextField
+                    required
+                    id="narticle-input"
+                    name="nArticle"
+                    label="N Article"
+                    type="text"
+                    value={formValues.nArticle}
+                    onChange={handleInputChange}
+                  />
+                </Grid>
+                <Grid item>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DemoContainer components={["DatePicker"]}>
+                      <DatePicker
+                        required
+                        label="Date Extrême"
+                        name="dateExtreme"
+                        selected={formValues.dateExtreme}
+                        onChange={(e) => {
+                          setFormValues({
+                            ...formValues,
+                            dateExtreme: new Date(e),
+                          });
+                        }}
+                        dateFormat="dd/MM/YYYY"
+                        minDate={dayjs()}
+                      />
+                    </DemoContainer>
+                  </LocalizationProvider>
+                  <TextField
+                    required
+                    multiline
+                    id="desc-input"
+                    name="description"
+                    label="Description"
+                    type="text"
+                    value={formValues.description}
+                    onChange={handleInputChange}
+                  />
+
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DemoContainer components={["DatePicker"]}>
+                      <DatePicker
+                        required
+                        label="Date Elimination"
+                        name="dateElimination"
+                        selected={formValues.dateElimination}
+                        onChange={(e) => {
+                          setFormValues({
+                            ...formValues,
+                            dateElimination: new Date(e),
+                          });
+                        }}
+                        dateFormat="dd/MM/YYYY"
+                        minDate={dayjs(formValues.dateExtreme)}
+                      />
+                    </DemoContainer>
+                  </LocalizationProvider>
+
+                  <TextField
+                    required
+                    multiline
+                    id="obs-input"
+                    name="observation"
+                    label="Observation"
+                    type="text"
+                    value={formValues.observation}
+                    onChange={handleInputChange}
+                  />
+                </Grid>
+                <Grid item>
+                  {boites && (
+                    <TextField
+                      required
+                      select
+                      id="demo-simple-select"
+                      name="boiteId"
+                      value={formValues.boiteId}
+                      label="N Boite"
+                      onChange={handleInputChange}
+                    >
+                      {boites.map((option) => (
+                        <MenuItem key={option.id} value={option.id}>
+                          Boite N {option.nbBoite} Salle {option.nbSalle}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                </Grid>
+                <Grid item>
+                  <Autocomplete
+                    name="categoryId"
+                    value={formValues.categoryId}
+                    onChange={async (event, newValue) => {
+                      if (typeof newValue === "string") {
+                        setFormValues({
+                          ...formValues,
+                          categoryId: newValue,
+                        });
+                      } else if (newValue && newValue.inputValue) {
+                        // Create a new value from the user input
+
+                        Axios.post(
+                          process.env.REACT_APP_HOSTNAME + "/category",
+                          { categorie: newValue.inputValue },
+                          {
+                            withCredentials: true,
+                            headers: { Authorization: `Bearer ${token}` },
+                          }
+                        )
+                          .then((res) => {
+                            setFormValues({
+                              ...formValues,
+                              categorie: res.data,
+                            });
+                          })
+                          .catch((error) => alert("Erreur"));
+                      } else {
+                        setFormValues({
+                          ...formValues,
+                          categoryId: newValue,
+                        });
+                      }
+                    }}
+                    filterOptions={(options, params) => {
+                      const filtered = filter(options, params);
+
+                      const { inputValue } = params;
+                      // Suggest the creation of a new value
+                      const isExisting = options.some(
+                        (option) => inputValue === option.title
+                      );
+                      if (inputValue !== "" && !isExisting) {
+                        filtered.push({
+                          inputValue,
+                          title: `Add "${inputValue}"`,
+                        });
+                      }
+
+                      return filtered;
+                    }}
+                    selectOnFocus
+                    clearOnBlur
+                    handleHomeEndKeys
+                    id="free-solo-with-text-demo"
+                    options={categories}
+                    getOptionLabel={(option) => {
+                      // Value selected with enter, right from the input
+                      if (typeof option === "string") {
+                        return option;
+                      }
+                      // Add "xxx" option created dynamically
+                      if (option.inputValue) {
+                        return option.inputValue;
+                      }
+                      // Regular option
+                      return option.title;
+                    }}
+                    renderOption={(props, option) => (
+                      <li {...props}>{option.title}</li>
+                    )}
+                    sx={{ width: 300 }}
+                    freeSolo
+                    renderInput={(params) => (
+                      <TextField {...params} label="Categorie" />
+                    )}
+                  />
+                </Grid>
+                <Grid item>
+                  <FormControl>
+                    <FormLabel id="demo-row-radio-buttons-group-label">
+                      Type de document
+                    </FormLabel>
+                    <RadioGroup
+                      row
+                      aria-labelledby="demo-row-radio-buttons-group-label"
+                      name="type_doc"
+                      value={formValues.type_doc}
+                      onChange={handleInputChange}
+                    >
+                      <FormControlLabel
+                        value="ELECTRONIC"
+                        control={<Radio />}
+                        label="ELECTRONIC"
+                      />
+                      <FormControlLabel
+                        value="PAPIER"
+                        control={<Radio />}
+                        label="PAPIER"
+                      />
+                    </RadioGroup>
+                  </FormControl>
+                </Grid>
+                <Button variant="contained" color="primary" type="submit">
+                  Enregistrer
+                </Button>
+              </Grid>
+            </Box>{" "}
+          </DialogContent>
+        </Dialog>
       )}
     </Box>
   );

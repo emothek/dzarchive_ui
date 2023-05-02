@@ -49,13 +49,6 @@ function AppTheme({ children }) {
     return createTheme({
       direction: dir,
       typography,
-      components: {
-        MuiAppBar: {
-          colorPrimary: {
-            backgroundColor: "red",
-          },
-        },
-      },
     });
   }, [dir, colorMode]);
 

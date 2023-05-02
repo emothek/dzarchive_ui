@@ -24,6 +24,7 @@
     "react-doc-viewer": "^0.1.5",
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.2.3",
+    "react-highlight-words": "^0.20.0",
     "react-hook-form": "^7.42.1",
     "react-i18next": "^12.1.4",
     "react-organizational-chart": "^2.2.1",

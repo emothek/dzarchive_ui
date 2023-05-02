@@ -12,14 +12,14 @@ import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
-
+import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
 import DriveFolderUploadIcon from "@mui/icons-material/DriveFolderUpload";
 import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { Box } from "@mui/system";
-
+import { CirclePicker } from "react-color";
 import { useDropzone } from "react-dropzone";
 import { useTranslation } from "react-i18next";
 
@@ -28,7 +28,19 @@ import Linear from "./Linear";
 import ProgressBar from "./ProgressBar";
 import FilesList from "./FilesList";
 import formatBytes from "../utils/formatBytes";
-import { Alert, MenuItem } from "@mui/material";
+import {
+  Alert,
+  Card,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  MenuItem,
+  Radio,
+  RadioGroup,
+} from "@mui/material";
 import { useEffect } from "react";
 import dayjs from "dayjs";
 
@@ -50,7 +62,9 @@ export const uploadPhotos = async (
   formData.append("dateExtreme", data.dateExtreme);
   formData.append("dateElimination", data.dateElimination);
   formData.append("boiteId", data.boiteId);
-
+  formData.append("category", data.categorie?.id);
+  formData.append("type_doc", data.type_doc);
+  formData.append("tagId", data.tagId);
   // for (let i = 0; i < files.length; i += 1) {
   //   formData.append("file", files[i]);
   // }
@@ -75,6 +89,7 @@ export const uploadPhotos = async (
         alert("fichier crée !");
       })
       .catch((error) => {
+        alert(error.response.data);
         if (error.response.data.length === 1) setError(error.response.data);
         else setError("Erreur");
       });
@@ -112,7 +127,13 @@ export default function Content(props) {
   const [progress, setProgress] = useState(0);
   const [success, setSuccess] = useState(false);
   const [boites, setBoites] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [tags, setTags] = useState(null);
+  const [openForm, setOpenForm] = useState(false);
+
+  const [theCategorie, setCategorie] = React.useState(null);
   const [file, setFile] = useState(null);
+  const [lastId, setLastId] = useState(null);
   const [data, setData] = useState({
     title: file ? file.name : "",
     nArticle: "",
@@ -121,8 +142,18 @@ export default function Content(props) {
     dateElimination: null,
     observation: "",
     boiteId: 0,
+    type_doc: "ELECTRONIC",
+    categorie: categories.length > 0 ? categories[0].title : "",
+    tagId: null,
   });
   const [formValues, setFormValues] = useState(data);
+  const [tag, setTag] = useState({
+    tag_name: "",
+    tag_desc: "",
+    color: "",
+  });
+  const [tagId, setTagId] = useState(null);
+  const filter = createFilterOptions();
 
   useEffect(() => {
     axios
@@ -134,10 +165,38 @@ export default function Content(props) {
         //console.log(res.data)
         setBoites(res.data);
       });
+    axios
+      .get(process.env.REACT_APP_HOSTNAME + "/categories", {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        //console.log(res.data)
+        setCategories(res.data);
+      });
+    axios
+      .get(process.env.REACT_APP_HOSTNAME + "/tags", {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        //console.log(res.data)
+        setTags(res.data);
+      });
+    axios
+      .get(process.env.REACT_APP_HOSTNAME + "/files", {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        //console.log(res.data)
+        setLastId(res.data[res.data.length - 1].id);
+      });
   }, [token]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    console.log(e.target.value);
     setFormValues({
       ...formValues,
       [name]: value,
@@ -179,6 +238,10 @@ export default function Content(props) {
       </>
     );
   });
+
+  const handleCloseT = () => {
+    setOpenForm(false);
+  };
 
   return (
     <Paper sx={{ margin: "auto", overflow: "hidden" }}>
@@ -260,7 +323,16 @@ export default function Content(props) {
                   >
                     <Grid item>
                       <TextField
-                        required
+                        id="outlined-read-only-input"
+                        label="Numéro Séquentiel"
+                        defaultValue={lastId + 1}
+                        InputProps={{
+                          readOnly: true,
+                        }}
+                      />
+                    </Grid>
+                    <Grid item>
+                      <TextField
                         id="narticle-input"
                         name="nArticle"
                         label="N Article"
@@ -284,7 +356,6 @@ export default function Content(props) {
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DemoContainer components={["DatePicker"]}>
                           <DatePicker
-                            required
                             label="Date Extrême"
                             name="dateExtreme"
                             selected={formValues.dateExtreme}
@@ -299,10 +370,7 @@ export default function Content(props) {
                           />
                         </DemoContainer>
                       </LocalizationProvider>
-                    </Grid>
-                    <Grid item>
                       <TextField
-                        required
                         multiline
                         id="desc-input"
                         name="description"
@@ -316,7 +384,6 @@ export default function Content(props) {
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DemoContainer components={["DatePicker"]}>
                           <DatePicker
-                            required
                             label="Date Elimination"
                             name="dateElimination"
                             selected={formValues.dateElimination}
@@ -332,9 +399,8 @@ export default function Content(props) {
                         </DemoContainer>
                       </LocalizationProvider>
                     </Grid>
-                    <Grid item>
+                    <Grid>
                       <TextField
-                        required
                         multiline
                         id="obs-input"
                         name="observation"
@@ -347,7 +413,6 @@ export default function Content(props) {
                     <Grid item>
                       {boites && (
                         <TextField
-                          required
                           select
                           id="demo-simple-select"
                           name="boiteId"
@@ -364,15 +429,213 @@ export default function Content(props) {
                       )}
                     </Grid>
                     <Grid item>
-                      <Button
-                        variant="contained"
-                        color="secondary"
-                        type="submit"
-                        sx={{ width: "50ch", marginTop: 2 }}
-                      >
-                        Enregistrer
-                      </Button>
+                      <Autocomplete
+                        name="categorie"
+                        value={formValues.categorie}
+                        onChange={async (event, newValue) => {
+                          if (typeof newValue === "string") {
+                            setFormValues({
+                              ...formValues,
+                              categorie: newValue,
+                            });
+                          } else if (newValue && newValue.inputValue) {
+                            // Create a new value from the user input
+                            axios
+                              .post(
+                                process.env.REACT_APP_HOSTNAME + "/category",
+                                { categorie: newValue.inputValue },
+                                {
+                                  withCredentials: true,
+                                  headers: { Authorization: `Bearer ${token}` },
+                                }
+                              )
+                              .then((res) => {
+                                setFormValues({
+                                  ...formValues,
+                                  categorie: res.data,
+                                });
+                              })
+                              .catch((error) => alert("Erreur"));
+                          } else {
+                            setFormValues({
+                              ...formValues,
+                              categorie: newValue,
+                            });
+                          }
+                        }}
+                        filterOptions={(options, params) => {
+                          const filtered = filter(options, params);
+
+                          const { inputValue } = params;
+                          // Suggest the creation of a new value
+                          const isExisting = options.some(
+                            (option) => inputValue === option.title
+                          );
+                          if (inputValue !== "" && !isExisting) {
+                            filtered.push({
+                              inputValue,
+                              title: `Add "${inputValue}"`,
+                            });
+                          }
+
+                          return filtered;
+                        }}
+                        selectOnFocus
+                        clearOnBlur
+                        handleHomeEndKeys
+                        id="free-solo-with-text-demo"
+                        options={categories}
+                        getOptionLabel={(option) => {
+                          // Value selected with enter, right from the input
+                          if (typeof option === "string") {
+                            return option;
+                          }
+                          // Add "xxx" option created dynamically
+                          if (option.inputValue) {
+                            return option.inputValue;
+                          }
+                          // Regular option
+                          return option.title;
+                        }}
+                        renderOption={(props, option) => (
+                          <li {...props}>{option.title}</li>
+                        )}
+                        sx={{ width: 300 }}
+                        freeSolo
+                        renderInput={(params) => (
+                          <TextField {...params} label="Categorie" />
+                        )}
+                      />
                     </Grid>
+                    <Grid item>
+                      {tags && tags.length > 0 && !openForm ? (
+                        <Grid item sx={{ display: "flex", flex: "wrap" }}>
+                          <TextField
+                            fullWidth
+                            select
+                            id="tagId"
+                            name="tagId"
+                            value={formValues.tagId}
+                            label="Tag"
+                            onChange={handleInputChange}
+                          >
+                            {tags.map((option) => (
+                              <MenuItem key={option.id} value={option.id}>
+                                {option.tag_name}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                          <IconButton onClick={() => setOpenForm(true)}>
+                            <AddCircleIcon titleAccess="Ajouter nouveau tag" />
+                          </IconButton>
+                        </Grid>
+                      ) : (
+                        <Dialog
+                          open={openForm}
+                          onClose={handleCloseT}
+                          fullWidth={true}
+                        >
+                          <DialogTitle>{t("Add Tag")}</DialogTitle>
+                          <DialogContent>
+                            <Grid item>
+                              <TextField
+                                id="tagName"
+                                name="tag_name"
+                                value={tag.tag_name}
+                                fullWidth
+                                type="text"
+                                label="Name"
+                                onChange={(e) => {
+                                  setOpenForm(true);
+                                  setTag({ ...tag, tag_name: e.target.value });
+                                }}
+                              />
+                            </Grid>
+                            <br />
+                            <Grid item>
+                              <TextField
+                                multiline
+                                fullWidth
+                                id="desc-input"
+                                name="tag_desc"
+                                label="Description"
+                                type="text"
+                                value={tag.tag_desc}
+                                onChange={(e) =>
+                                  setTag({ ...tag, tag_desc: e.target.value })
+                                }
+                              />
+                            </Grid>
+                            <br />
+                            <Grid item>
+                              <CirclePicker
+                                onChange={(color) =>
+                                  setTag({ ...tag, color: color.hex })
+                                }
+                              />{" "}
+                            </Grid>
+                            <br />
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              type="submit"
+                              onClick={async () => {
+                                await axios
+                                  .post(
+                                    process.env.REACT_APP_HOSTNAME + `/tag`,
+                                    { tag },
+                                    {
+                                      withCredentials: true,
+                                      headers: {
+                                        Authorization: `Bearer ${token}`,
+                                      },
+                                    }
+                                  )
+                                  .then((res) => {
+                                    setFormValues({
+                                      ...formValues,
+                                      tagId: res.data.id,
+                                    });
+                                    alert("tag crée");
+                                  });
+
+                                setOpenForm(false);
+                              }}
+                            >
+                              Ajouter
+                            </Button>{" "}
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                    </Grid>
+                    <Grid item>
+                      <FormControl>
+                        <FormLabel id="demo-row-radio-buttons-group-label">
+                          Type de document
+                        </FormLabel>
+                        <RadioGroup
+                          row
+                          aria-labelledby="demo-row-radio-buttons-group-label"
+                          name="type_doc"
+                          value={formValues.type_doc}
+                          onChange={handleInputChange}
+                        >
+                          <FormControlLabel
+                            value="ELECTRONIC"
+                            control={<Radio />}
+                            label="ELECTRONIC"
+                          />
+                          <FormControlLabel
+                            value="PAPIER"
+                            control={<Radio />}
+                            label="PAPIER"
+                          />
+                        </RadioGroup>
+                      </FormControl>
+                    </Grid>
+                    <Button variant="contained" color="primary" type="submit">
+                      Enregistrer
+                    </Button>
                   </Grid>
                 </Box>{" "}
               </div>

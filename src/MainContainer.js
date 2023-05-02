@@ -298,8 +298,7 @@ export default function MainContainer() {
               token={userContext.token}
               logout={logoutHandler}
             />
-          ) : content.content === "organisation" &&
-            userContext.details.role !== "USER" ? (
+          ) : content.content === "organisation" ? (
             <Organisation
               user={userContext.details}
               logout={logoutHandler}

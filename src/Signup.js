@@ -23,7 +23,7 @@ const getOrganisations = (organisations, options = []) => {
       getOrganisations(o.suborganisations, options);
     }
   }
-  console.log(options);
+  //console.log(options);
   return options;
 };
 
@@ -113,11 +113,13 @@ export default function SignUp() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+
     setName(data.get("name"));
     setEmail(data.get("email"));
     setPassword(data.get("password"));
     setRole(data.get("role"));
     setOrganisation(data.get("organisationId"));
+    console.log(name, email, password, role, organisation);
 
     await Axios.post(
       process.env.REACT_APP_HOSTNAME + "/signup",
