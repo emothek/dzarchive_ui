@@ -11,13 +11,10 @@ export default function File({ file }) {
   return (
     <div>
       <DocViewer
-        prefetchMethod="GET"
         pluginRenderers={DocViewerRenderers}
-        documents={selectedDocs.map((f) => {
-          return {
-            uri: f,
-          };
-        })}
+        documents={selectedDocs.map((f) => ({
+          uri: window.URL.createObjectURL(f),
+        }))}
         config={{
           header: {
             disableHeader: true,

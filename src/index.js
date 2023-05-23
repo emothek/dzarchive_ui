@@ -1,16 +1,20 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import './translations/i18n';
-import reportWebVitals from './reportWebVitals';
-import { UserProvider } from "./context/UserContext"
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
+import "./translations/i18n";
+import reportWebVitals from "./reportWebVitals";
+import { UserProvider } from "./context/UserContext";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+if (window.__isReactDndBackendSetUp) {
+  window.__isReactDndBackendSetUp = false;
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <UserProvider>
-    <App />
+      <App />
     </UserProvider>
   </React.StrictMode>
 );

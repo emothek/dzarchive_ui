@@ -91,6 +91,13 @@ export default function SignIn() {
       .then(async (res) => {
         if (res) {
           const data = await res.data.data;
+          await Axios.post(process.env.REACT_APP_HOSTNAME +
+            `/user/activity/`,
+            {activity:"userLoggedIn"},
+            {
+              withCredentials: true,
+              headers: { Authorization: `Bearer ${data.token}` },
+            })
           setUserContext((oldValues) => {
             return { ...oldValues, token: data.token };
           });

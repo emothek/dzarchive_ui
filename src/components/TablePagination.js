@@ -157,6 +157,8 @@ export default function DataTablePagination(props) {
   const { user, token, rows, headCells, content, handleOpenRange } = props;
   const [open, setOpen] = React.useState(false);
   const [openV, setOpenV] = React.useState(false);
+  const [openB, setOpenB] = React.useState(false);
+  
   const { t } = useTranslation();
 
   const handleClickOpen = () => {
@@ -164,13 +166,20 @@ export default function DataTablePagination(props) {
   };
   const handleClickOpenV = () => {
     setOpenV(true);
+    
   };
-
+  const handleClickOpenB = () => {
+    setOpenB(true);
+    
+  };
   const handleClose = () => {
     setOpen(false);
   };
   const handleCloseV = () => {
     setOpenV(false);
+  };
+  const handleCloseB = () => {
+    setOpenB(false);
   };
 
   const handleRequestSort = (event, property) => {
@@ -219,7 +228,7 @@ export default function DataTablePagination(props) {
 
   /**/
 
-  const isSelected = (name) => selected.indexOf(name) !== -1;
+  //const isSelected = (name) => selected.indexOf(name) !== -1;
 
   return (
     <Paper sx={{ width: "100%", mb: 2 }}>
@@ -414,6 +423,7 @@ export default function DataTablePagination(props) {
                                     secondary={row.nomRSvPreArchivage}
                                   />
                                 </ListItem>
+                               {row.imagePath && <ListItem><img src={process.env.REACT_APP_HOSTNAME + `/bordereau/view/${row.id}`}  alt="bordereau"/></ListItem>}
                               </List>
                             </Box>
                           </DialogContent>
@@ -453,6 +463,7 @@ export default function DataTablePagination(props) {
                           ? row.bordereauVersement.nbv
                           : "Aucun"}
                       </TableCell>
+                      
                       <TableCell align="right">
                         <IconButton onClick={handleClickOpen}>
                           <DeleteIcon
@@ -499,6 +510,21 @@ export default function DataTablePagination(props) {
                             </Button>
                           </DialogActions>
                         </Dialog>
+                        {row.imagePath &&
+                        <>
+                        <IconButton onClick={handleClickOpenB}>
+                          <FileOpenIcon titleAccess={t("Afficher")} />
+                        </IconButton>
+                        <Dialog
+                          open={openB}
+                          onClose={handleCloseB}
+                          aria-labelledby="alert-dialog-title"
+                          aria-describedby="alert-dialog-description"
+                        >
+                          <img src={process.env.REACT_APP_HOSTNAME + `/boite/view/${row.id}`}  alt="boite"  />
+                        </Dialog>
+                        </>
+                        }
                       </TableCell>
                     </TableRow>
                   );

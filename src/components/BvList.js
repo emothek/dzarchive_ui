@@ -94,6 +94,7 @@ const BvList = (props) => {
   const [bordereaux, setBordereaux] = useState(null);
   const [content, setContent] = useState("");
   const [filterB, setFilterB] = useState(bordereaux);
+  const [image,setImage]=useState(null)
   const [formErrors, setFormErrors] = useState({
     numError: "",
     //dateError: "",
@@ -189,15 +190,36 @@ const BvList = (props) => {
     checkError(e);
   };
 
+  const handleChange = (e) => {
+    setImage(e.target.files[0]);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log(formValues);
+    const fd=new FormData();
+    fd.append("file", image)
+    fd.append("nbv", formValues.nbv)
+    fd.append("date_versement", formValues.date_versement)
+    fd.append("direction", formValues.direction)
+    fd.append("sous_direction", formValues.sous_direction)
+    fd.append("service", formValues.service)
+    fd.append("intitule", formValues.intitule)
+    fd.append("dateExtreme", formValues.dateExtreme)
+    fd.append("nbr_articles", formValues.nbr_articles)
+    fd.append("localisation", formValues.localisation)
+    fd.append("etatPhysique", formValues.etatPhysique)
+    fd.append("nomRSVersante", formValues.nomRSVersante)
+    fd.append("nomRSvPreArchivage", formValues.nomRSvPreArchivage)
+    fd.append("metrageLineaire", formValues.metrageLineaire)
+    
+    console.log(image)
     await Axios.post(
       process.env.REACT_APP_HOSTNAME + "/bordereau",
-      formValues,
+      fd,
       {
         withCredentials: true,
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
       }
     ).then((res) => {
       alert("ajout avec succés");
@@ -431,7 +453,15 @@ const BvList = (props) => {
                         onChange={handleInputChange}
                       />
                     </Grid>
-
+                    <Grid item>
+                      <TextField
+                      required
+                      fullWidth
+                      helperText="Sélectionner une image"
+                      type="file"
+                      onChange={handleChange}
+                    />
+                    </Grid>
                     <Button
                       variant="contained"
                       color="primary"

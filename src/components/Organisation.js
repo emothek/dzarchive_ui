@@ -92,8 +92,10 @@ const Node = ({
         background: "white",
         border: "1px solid red",
       }}
+      dir="ltr"
     >
       <CardHeader
+        dir="ltr"
         avatar={
           <Avatar
             alt="Logo"
@@ -179,11 +181,13 @@ const constructTree = (
     if (item.parent === null) {
       return (
         <Tree
+          dir="ltr"
           lineWidth={"2px"}
           lineColor={"green"}
           lineBorderRadius={"10px"}
           label={
             <Node
+              dir="ltr"
               item={item}
               expanded={expanded}
               handleExpandClick={handleExpandClick}
@@ -208,8 +212,10 @@ const constructTree = (
     }
     return (
       <TreeNode
+        dir="ltr"
         label={
           <Node
+            dir="ltr"
             item={item}
             expanded={expanded}
             handleExpandClick={handleExpandClick}
@@ -323,7 +329,7 @@ export default function Organisation(props) {
   return (
     <Paper>
       <br />
-      <Box sx={{ maxWidth: 936, margin: "auto", overflow: "hidden" }}>
+      <Box sx={{ maxWidth: 936, margin: "auto", overflow: "hidden" }} dir="ltr">
         {organisations &&
           constructTree(
             organisations,

@@ -69,10 +69,10 @@ function AppTheme({ children }) {
   }, [dir]);
 
   useEffect(() => {
-    async function fetchLang() {
+    async function fetchLang(){
       await toggleLanguage({ value: language });
     }
-    fetchLang();
+    fetchLang()
   }, []);
 
   const toggleColorMode = () =>

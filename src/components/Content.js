@@ -40,9 +40,12 @@ import {
   MenuItem,
   Radio,
   RadioGroup,
+  Checkbox,
+  FormGroup,
 } from "@mui/material";
 import { useEffect } from "react";
 import dayjs from "dayjs";
+import { use } from "i18next";
 
 export const uploadPhotos = async (
   file,
@@ -65,6 +68,7 @@ export const uploadPhotos = async (
   formData.append("category", data.categorie?.id);
   formData.append("type_doc", data.type_doc);
   formData.append("tagId", data.tagId);
+  if (data.encrypt) formData.append("pwd", data.encrypt);
   // for (let i = 0; i < files.length; i += 1) {
   //   formData.append("file", files[i]);
   // }
@@ -86,6 +90,14 @@ export const uploadPhotos = async (
       .then((res) => {
         console.log(res.data);
         setSuccess(true);
+        axios.post(
+          process.env.REACT_APP_HOSTNAME + `/user/activity`,
+          { doc_id: res.data.id, activity: "userAddDocument" },
+          {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         alert("fichier crée !");
       })
       .catch((error) => {
@@ -131,10 +143,12 @@ export default function Content(props) {
   const [tags, setTags] = useState(null);
   const [openForm, setOpenForm] = useState(false);
 
+  const [encryptToggle, setEncryptToggle] = useState(false);
+
   const [theCategorie, setCategorie] = React.useState(null);
   const [file, setFile] = useState(null);
   const [lastId, setLastId] = useState(null);
-  const [data, setData] = useState({
+  const data = {
     title: file ? file.name : "",
     nArticle: "",
     description: "",
@@ -145,7 +159,8 @@ export default function Content(props) {
     type_doc: "ELECTRONIC",
     categorie: categories.length > 0 ? categories[0].title : "",
     tagId: null,
-  });
+    encrypt: "",
+  };
   const [formValues, setFormValues] = useState(data);
   const [tag, setTag] = useState({
     tag_name: "",
@@ -154,6 +169,11 @@ export default function Content(props) {
   });
   const [tagId, setTagId] = useState(null);
   const filter = createFilterOptions();
+
+  const handleEncryptToggle = (event) => {
+    setEncryptToggle(event.target.checked);
+    if (!event.target.checked) setFormValues({ ...formValues, encrypt: "" });
+  };
 
   useEffect(() => {
     axios
@@ -189,14 +209,17 @@ export default function Content(props) {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        //console.log(res.data)
-        setLastId(res.data[res.data.length - 1].id);
+        //console.log(res.data);
+        if (res.data && res.data.length > 0) {
+          setLastId(res.data[res.data.length - 1].id);
+        }
       });
   }, [token]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    console.log(e.target.value);
+    console.log(name);
+    console.log(value);
     setFormValues({
       ...formValues,
       [name]: value,
@@ -309,19 +332,14 @@ export default function Content(props) {
                 <Box
                   component="form"
                   sx={{
-                    "& .MuiTextField-root": { m: 1, width: "50ch" },
+                    "& .MuiTextField-root": { m: 1, width: "25ch" },
                   }}
                   noValidate
                   autoComplete="off"
                   onSubmit={handleSubmit}
                 >
-                  <Grid
-                    container
-                    alignItems="center"
-                    justify="center"
-                    direction="column"
-                  >
-                    <Grid item>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
                       <TextField
                         id="outlined-read-only-input"
                         label="Numéro Séquentiel"
@@ -331,7 +349,7 @@ export default function Content(props) {
                         }}
                       />
                     </Grid>
-                    <Grid item>
+                    <Grid item xs={6}>
                       <TextField
                         id="narticle-input"
                         name="nArticle"
@@ -341,7 +359,7 @@ export default function Content(props) {
                         onChange={handleInputChange}
                       />
                     </Grid>
-                    <Grid item>
+                    <Grid item xs={6}>
                       <TextField
                         id="title-input"
                         name="title"
@@ -352,7 +370,7 @@ export default function Content(props) {
                         onChange={handleInputChange}
                       />
                     </Grid>
-                    <Grid item>
+                    <Grid item xs={6}>
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DemoContainer components={["DatePicker"]}>
                           <DatePicker
@@ -380,7 +398,7 @@ export default function Content(props) {
                         onChange={handleInputChange}
                       />
                     </Grid>
-                    <Grid item>
+                    <Grid item xs={6}>
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DemoContainer components={["DatePicker"]}>
                           <DatePicker
@@ -399,7 +417,7 @@ export default function Content(props) {
                         </DemoContainer>
                       </LocalizationProvider>
                     </Grid>
-                    <Grid>
+                    <Grid item xs={6}>
                       <TextField
                         multiline
                         id="obs-input"
@@ -410,7 +428,7 @@ export default function Content(props) {
                         onChange={handleInputChange}
                       />
                     </Grid>
-                    <Grid item>
+                    <Grid item xs={6}>
                       {boites && (
                         <TextField
                           select
@@ -428,7 +446,7 @@ export default function Content(props) {
                         </TextField>
                       )}
                     </Grid>
-                    <Grid item>
+                    <Grid item xs={6}>
                       <Autocomplete
                         name="categorie"
                         value={formValues.categorie}
@@ -507,7 +525,7 @@ export default function Content(props) {
                         )}
                       />
                     </Grid>
-                    <Grid item>
+                    <Grid item xs={6}>
                       {tags && tags.length > 0 && !openForm ? (
                         <Grid item sx={{ display: "flex", flex: "wrap" }}>
                           <TextField
@@ -608,7 +626,7 @@ export default function Content(props) {
                         </Dialog>
                       )}
                     </Grid>
-                    <Grid item>
+                    <Grid item xs={6}>
                       <FormControl>
                         <FormLabel id="demo-row-radio-buttons-group-label">
                           Type de document
@@ -633,11 +651,42 @@ export default function Content(props) {
                         </RadioGroup>
                       </FormControl>
                     </Grid>
-                    <Button variant="contained" color="primary" type="submit">
-                      Enregistrer
-                    </Button>
+                    <Grid item xs={6}>
+                      <FormGroup>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={encryptToggle}
+                              onChange={handleEncryptToggle}
+                            />
+                          }
+                          label="Crypter le document 🔐"
+                        />
+                        <TextField
+                          id="encrypt-pwd"
+                          name="encrypt"
+                          label="Crypter"
+                          type="password"
+                          value={formValues.encrypt}
+                          onChange={handleInputChange}
+                          disabled={!encryptToggle}
+                        />
+                      </FormGroup>
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Button
+                        fullWidth
+                        size="large"
+                        variant="contained"
+                        color="primary"
+                        type="submit"
+                      >
+                        Enregistrer
+                      </Button>
+                    </Grid>
                   </Grid>
-                </Box>{" "}
+                </Box>
               </div>
             );
           })}

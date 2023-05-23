@@ -124,6 +124,13 @@ export default function SignUpSa() {
           if (res) {
             setSuccess(true);
             const data = await res.data.data;
+            await Axios.post(process.env.REACT_APP_HOSTNAME +
+              `/user/activity/`,
+              {activity:"userSignedUp"},
+              {
+                withCredentials: true,
+                headers: { Authorization: `Bearer ${data.token}` },
+              })
             alert("compte crée");
             setUserContext((oldValues) => {
               return { ...oldValues, token: data.token };

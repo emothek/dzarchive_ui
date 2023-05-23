@@ -40,6 +40,12 @@ const data = {
 };
 const headCells = [
   {
+    id: "nbBoite",
+    numeric: true,
+    disablePadding: false,
+    label: "N box",
+  },
+  {
     id: "nbSalle",
     numeric: true,
     disablePadding: true,
@@ -58,12 +64,6 @@ const headCells = [
     label: "N Floor",
   },
   {
-    id: "nbBoite",
-    numeric: true,
-    disablePadding: false,
-    label: "N box",
-  },
-  {
     id: "bordereauVId",
     numeric: true,
     disablePadding: false,
@@ -78,6 +78,7 @@ const Boites = (props) => {
   const [boites, setBoites] = useState(null);
   const [bordereaux, setBordereaux] = useState(null);
   const [content, setContent] = useState("");
+  const [image, setImage] = useState(null);
   const [success, setSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({
     numError: "",
@@ -138,12 +139,26 @@ const Boites = (props) => {
     checkError(e);
   };
 
+  const handleChange = (e) => {
+    setImage(e.target.files[0]);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log(formValues);
-    await Axios.post(process.env.REACT_APP_HOSTNAME + "/boite", formValues, {
+    const fd = new FormData();
+    fd.append("file", image);
+    fd.append("bordereauVId", formValues.bordereauVId);
+    fd.append("nbBoite", formValues.nbBoite);
+    fd.append("nbEtage", formValues.nbEtage);
+    fd.append("nbRayonnage", formValues.nbRayonnage);
+    fd.append("nbSalle", formValues.nbSalle);
+    await Axios.post(process.env.REACT_APP_HOSTNAME + "/boite", fd, {
       withCredentials: true,
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
     })
       .then((res) => {
         setSuccess(true);
@@ -251,6 +266,15 @@ const Boites = (props) => {
                         onChange={handleInputChange}
                         error={formErrors.numError}
                         helperText={formErrors.numError}
+                      />
+                    </Grid>
+                    <Grid item>
+                      <TextField
+                        required
+                        fullWidth
+                        helperText="Sélectionner une image"
+                        type="file"
+                        onChange={handleChange}
                       />
                     </Grid>
                     {bordereaux && (

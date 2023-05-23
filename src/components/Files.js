@@ -52,6 +52,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
 import File from "./File";
 import FileOpenIcon from "@mui/icons-material/FileOpen";
+import PasswordIcon from "@mui/icons-material/Password";
 import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
 import "react-date-range/dist/styles.css"; // main style file
 import "react-date-range/dist/theme/default.css"; // theme css file
@@ -59,6 +60,7 @@ import { DateRange } from "react-date-range";
 import { CirclePicker } from "react-color";
 import EditIcon from "@mui/icons-material/Edit";
 import Highlighter from "react-highlight-words";
+
 const download = require("downloadjs");
 
 function descendingComparator(a, b, orderBy) {
@@ -245,6 +247,14 @@ function EnhancedTableToolbar(props) {
                 Authorization: `Bearer ${token}`,
               },
             }).then((res) => {
+              Axios.post(
+                process.env.REACT_APP_HOSTNAME + `/user/activity/`,
+                { doc_id: selectedItems, activity: "userDeleteDocument" },
+                {
+                  withCredentials: true,
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
               alert("fichier supprimé");
             });
 
@@ -297,6 +307,11 @@ export default function Files(props) {
   const [dateType, setDateType] = useState("");
   const { t } = useTranslation();
   const filter = createFilterOptions();
+  const user_activities = [
+    "userDeleteDocument",
+    "userEditDocument",
+    "userViewDocument",
+  ];
   const [state, setState] = useState([
     {
       startDate: new Date(),
@@ -317,29 +332,15 @@ export default function Files(props) {
   const [openForm, setOpenForm] = useState(false);
   const [result, setResult] = useState(null);
   const [formValues, setFormValues] = useState({
-    nArticle: file?.nArticle,
-    description: file?.description,
-    dateExtreme: file?.dateExtreme,
-    dateElimination: file?.dateElimination,
-    observation: file?.observation,
-    boiteId: 0,
-    type_doc: file?.type_doc,
-    categoryId: file?.categorie?.id,
+    nArticle: "",
+    description: "",
+    dateExtreme: null,
+    dateElimination: null,
+    observation: "",
+    boiteId: null,
+    type_doc: "",
+    categoryId: null,
   });
-
-  // useEffect(() => {
-  //   setFormValues((prevState) => ({
-  //     ...prevState,
-  //     nArticle: file?.nArticle,
-  //     description: file?.description,
-  //     dateExtreme: file?.dateExtreme,
-  //     dateElimination: file?.dateElimination,
-  //     observation: file?.observation,
-  //     boiteId: 0,
-  //     type_doc: file?.type_doc,
-  //     categoryId: file?.categorie?.id,
-  //   }));
-  // }, [file]);
 
   useEffect(() => {
     if (tagExist) {
@@ -449,11 +450,10 @@ export default function Files(props) {
         { withCredentials: true, headers: { Authorization: `Bearer ${token}` } }
       )
         .then((res) => {
-          console.log(res);
-          if (res.data.files.length) {
+          if (res.data.files.length > 0) {
             setFilterFt(res.data.files);
             setResult(res.data.result);
-            console.log(res);
+            //console.log(result)
           } else {
             alert("Aucun resultat !");
           }
@@ -493,7 +493,17 @@ export default function Files(props) {
       withCredentials: true,
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => alert("Fichier modifié !"))
+      .then((res) => {
+        Axios.post(
+          process.env.REACT_APP_HOSTNAME + `/user/activity`,
+          { doc_id: file.id, activity: user_activities[1] },
+          {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        alert("Fichier modifié !");
+      })
       .catch((err) => alert("Erreur"));
   };
 
@@ -541,16 +551,37 @@ export default function Files(props) {
 
     handleClose();
   };
+
   const getFile = async (id) => {
     await Axios.get(process.env.REACT_APP_HOSTNAME + "/file/" + id, {
       withCredentials: true,
       headers: { Authorization: `Bearer ${token}` },
     }).then((res) => {
+      console.log(res);
       setFile(res.data);
       setType(res.data.title.split(".").pop());
       console.log(type);
     });
   };
+
+  const getEncryptedFile = async (id, password) => {
+    try {
+      console.log(token);
+      return await fetch(
+        process.env.REACT_APP_HOSTNAME + "/file/viewenc/" + id + `/${password}`,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } catch (error) {
+      console.log(error);
+      return error;
+    }
+  };
+
   const createCategory = async (categorie) => {
     await Axios.post(
       process.env.REACT_APP_HOSTNAME + "/category",
@@ -665,9 +696,12 @@ export default function Files(props) {
                     const isItemSelected = isSelected(f.id);
                     const labelId = `enhanced-table-checkbox-${index}`;
 
+                    let filtered =
+                      result && result.filter((r) => r.titre === f.title);
+                    console.log(filtered);
                     let textToHighlight = result
                       ? "".concat(
-                          result.map((r) => r.titre === f.title && r.line)
+                          filtered.map((r) => r.titre === f.title && r.line)
                         )
                       : " test ";
 
@@ -761,31 +795,92 @@ export default function Files(props) {
                             </Card>
                           </TableCell>
                         )}
+
                         <TableCell sx={{ display: "flex", flex: "wrap" }}>
-                          <IconButton
-                            onClick={async () => {
-                              await getFile(f.id);
+                          {f.password && (
+                            <IconButton
+                              onClick={async () => {
+                                console.log("..... file object");
+                                console.log(f);
 
-                              const res = await Axios.get(
-                                process.env.REACT_APP_HOSTNAME +
-                                  `/file/view/${f.id}`,
-                                {
-                                  withCredentials: true,
-                                  headers: { Authorization: `Bearer ${token}` },
+                                if (!showFile) {
+                                  await getFile(f.id);
+                                  let password = prompt("Password");
+
+                                  const encFile = await getEncryptedFile(
+                                    f.id,
+                                    password
+                                  );
+                                  console.log("\n\n\n ====== file ");
+                                  console.log(typeof encFile);
+                                  console.log(encFile);
+
+                                  const blob = await encFile.blob();
+                                  console.log(blob);
+                                  setPath(blob);
+
+                                  handleShow();
                                 }
-                              );
+                              }}
+                            >
+                              <PasswordIcon
+                                color="primary"
+                                titleAccess={t("Afficher")}
+                              />
+                            </IconButton>
+                          )}
 
-                              console.log(res);
-                              //const blob = await res.blob();
-                              setPath(res.data);
-                              handleShow();
-                            }}
-                          >
-                            <FileOpenIcon
-                              color="primary"
-                              titleAccess={t("Afficher")}
-                            />
-                          </IconButton>
+                          {!f.password && (
+                            <IconButton
+                              onClick={async () => {
+                                console.log("..... file object");
+                                console.log(f);
+
+                                if (!showFile) {
+                                  await getFile(f.id);
+
+                                  const res = await fetch(
+                                    process.env.REACT_APP_HOSTNAME +
+                                      `/file/view/${f.id}`,
+                                    {
+                                      withCredentials: true,
+                                      headers: {
+                                        Authorization: `Bearer ${token}`,
+                                      },
+                                    }
+                                  );
+                                  if (res) {
+                                    await Axios.post(
+                                      process.env.REACT_APP_HOSTNAME +
+                                        `/user/activity/`,
+                                      {
+                                        doc_id: f.id,
+                                        activity: user_activities[2],
+                                      },
+                                      {
+                                        withCredentials: true,
+                                        headers: {
+                                          Authorization: `Bearer ${token}`,
+                                        },
+                                      }
+                                    );
+                                    console.log(res);
+                                    const blob = await res.blob();
+                                    console.log(blob);
+                                    setPath(blob);
+                                  }
+
+                                  handleShow();
+                                }
+                              }}
+                            >
+                              <FileOpenIcon
+                                color="primary"
+                                titleAccess={t("Afficher")}
+                              />
+                            </IconButton>
+                          )}
+
                           <IconButton
                             onClick={() => {
                               getFile(f.id);
@@ -794,6 +889,7 @@ export default function Files(props) {
                           >
                             <BookmarkAddIcon titleAccess={t("Add Tag")} />
                           </IconButton>
+
                           <IconButton
                             onClick={async () => {
                               await getFile(f.id);
@@ -915,6 +1011,14 @@ export default function Files(props) {
                             headers: { Authorization: `Bearer ${token}` },
                           }
                         ).then((res) => {
+                          Axios.post(
+                            process.env.REACT_APP_HOSTNAME + `/user/activity/`,
+                            { doc_id: file.id, activity: user_activities[1] },
+                            {
+                              withCredentials: true,
+                              headers: { Authorization: `Bearer ${token}` },
+                            }
+                          );
                           alert("Tag ajouté");
                           handleCloseT();
                         });
@@ -928,6 +1032,14 @@ export default function Files(props) {
                           headers: { Authorization: `Bearer ${token}` },
                         }
                       ).then((res) => {
+                        Axios.post(
+                          process.env.REACT_APP_HOSTNAME + `/user/activity/`,
+                          { doc_id: file.id, activity: user_activities[1] },
+                          {
+                            withCredentials: true,
+                            headers: { Authorization: `Bearer ${token}` },
+                          }
+                        );
                         alert("Tag ajouté");
                         handleCloseT();
                       });
@@ -1311,6 +1423,7 @@ export default function Files(props) {
                     )}
                   />
                 </Grid>
+
                 <Grid item>
                   <FormControl>
                     <FormLabel id="demo-row-radio-buttons-group-label">

@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 
 import Content from "./Content";
 import Files from "./Files";
-import { Box, useTheme } from "@mui/material";
+import { Box } from "@mui/material";
 
 const lightColor = "rgba(255, 255, 255, 0.7)";
 

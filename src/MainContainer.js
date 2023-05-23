@@ -14,8 +14,11 @@ import Boites from "./components/Boites";
 import Users from "./components/users";
 import Organisation from "./components/Organisation";
 import { UserContext } from "./context/UserContext";
-
+import Axios from "axios";
 import Loader from "./Loader";
+import UserActivities from "./components/User_activities";
+// import { Outlet } from "react-router-dom";
+import Warehouse from "./pages/warehouse";
 
 function Copyright() {
   return (
@@ -241,6 +244,14 @@ export default function MainContainer() {
         Authorization: `Bearer ${userContext.token}`,
       },
     }).then(async (response) => {
+      Axios.post(
+        process.env.REACT_APP_HOSTNAME + `/user/activity/`,
+        { activity: "userLoggedOut" },
+        {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${userContext.token}` },
+        }
+      );
       setUserContext((oldValues) => {
         return { ...oldValues, details: undefined, token: null };
       });
@@ -292,7 +303,7 @@ export default function MainContainer() {
               token={userContext.token}
               logout={logoutHandler}
             />
-          ) : content.content === "BvList" ? (
+          ) : content.content === "Bordereaux" ? (
             <BvList
               user={userContext.details}
               token={userContext.token}
@@ -311,6 +322,15 @@ export default function MainContainer() {
               token={userContext.token}
               logout={logoutHandler}
             />
+          ) : content.content === "user_activities" &&
+            userContext.details.role !== "USER" ? (
+            <UserActivities
+              user={userContext.details}
+              token={userContext.token}
+            />
+          ) : content.content === "warehouse" &&
+            userContext.details.role !== "USER" ? (
+            <Warehouse user={userContext.details} token={userContext.token} />
           ) : (
             <Header
               onDrawerToggle={handleDrawerToggle}

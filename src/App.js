@@ -14,6 +14,8 @@ import {
   Routes,
 } from "react-router-dom";
 import Axios from "axios";
+import Warehouse from "./pages/warehouse";
+import Boites from "./components/Boites";
 
 function App() {
   const [userContext, setUserContext] = useContext(UserContext);
@@ -74,7 +76,10 @@ function App() {
     <BrowserRouter>
       <AppTheme>
         <Routes>
-          <Route exact path="/" element={<MainContainer />} />
+          <Route exact path="/" element={<MainContainer />}>
+            <Route exact path="/warehouse" element={<Warehouse />} />
+            <Route exact path="/boites" element={<Boites />} />
+          </Route>
           <Route exact path="/login" element={<Login />} />
           <Route exact path="/signup" element={<Signup />} />
           <Route exact path="/superadmin/create" element={<SignupSa />} />

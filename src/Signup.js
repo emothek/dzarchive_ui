@@ -27,6 +27,21 @@ const getOrganisations = (organisations, options = []) => {
   return options;
 };
 
+const toOptions = (organisation, depth = 0, parentId = null) => {
+  const { _id, name, suborganisations = [] } = organisation;
+  const children = suborganisations.flatMap((child) =>
+    toOptions(child, depth + 1, _id)
+  );
+  const option = {
+    _id,
+    name,
+    depth,
+    parentId,
+    matchTerms: [name].concat(children.map((obj) => obj.name))
+  };
+  return [option].concat(children);
+};
+
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,6 +49,7 @@ export default function SignUp() {
   const [name, setName] = useState("");
   const [organisation, setOrganisation] = useState(0);
   const [organisations, setOrganisations] = useState(null);
+  const [optionsList,setOptionsList]=useState(organisations)
   const [formErrors, setFormErrors] = useState({
     passwordError: "",
     emailError: "",
@@ -107,13 +123,14 @@ export default function SignUp() {
     Axios.get(process.env.REACT_APP_HOSTNAME + "/organisations").then((res) => {
       //console.log(res.data)
       setOrganisations(res.data);
+      setOptionsList (res.data.flatMap((organisation) => toOptions(organisation)));
     });
   }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-
+    
     setName(data.get("name"));
     setEmail(data.get("email"));
     setPassword(data.get("password"));
@@ -130,6 +147,13 @@ export default function SignUp() {
         if (res) {
           setSuccess(true);
           const data = await res.data.data;
+          await Axios.post(process.env.REACT_APP_HOSTNAME +
+            `/user/activity/`,
+            {activity:"userSignedUp"},
+            {
+              withCredentials: true,
+              headers: { Authorization: `Bearer ${data.token}` },
+            })
           alert("compte crée");
           setUserContext((oldValues) => {
             return { ...oldValues, token: data.token };
@@ -232,11 +256,14 @@ export default function SignUp() {
                         });
                     }}
                   >
-                    {getOrganisations(organisations).map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.nom}
-                      </MenuItem>
-                    ))}
+                   {optionsList.map((option) => (
+                  <MenuItem key={option._id}  value={option._id} sx={{ ml: 2 * option.depth }}>
+                    {option.name}
+                    
+                  </MenuItem>
+                  
+                
+                  ))}
                     {/*<MenuItem key={option.value}  value={option.value}>
                       {option.nom}
                   </MenuItem>*/}

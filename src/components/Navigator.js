@@ -15,6 +15,12 @@ import PermMediaOutlinedIcon from "@mui/icons-material/PhotoSizeSelectActual";
 import LogoutIcon from "@mui/icons-material/Logout";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+
+import { Link } from "react-router-dom";
+
+import CommunesIcon from "@mui/icons-material/HomeMax";
+import DirectionsIcon from "@mui/icons-material/AcUnitSharp";
+
 /*import PublicIcon from "@mui/icons-material/Public";
 import SettingsEthernetIcon from "@mui/icons-material/SettingsEthernet";
 import SettingsInputComponentIcon from "@mui/icons-material/SettingsInputComponent";
@@ -134,30 +140,16 @@ export default function Navigator(props) {
   if (role === "USER") {
     categories = [
       {
-        id: t("Tools"),
-
+        id: t("Warehouse"),
         children: [
           {
-            id: t("Archiving"),
+            id: t("Warehouse"),
             icon: <PermMediaOutlinedIcon />,
             active: true,
-            content: "Archivage",
+            content: "warehouse",
           },
-          {
-            id: t("Organization"),
-            icon: <DnsRoundedIcon />,
-            content: "organisation",
-          },
-
-          { id: t("Slips"), icon: <DnsRoundedIcon />, content: "BvList" },
-          { id: t("Boxes"), icon: <DnsRoundedIcon />, content: "Boites" },
-          { id: t("Articles"), icon: <DnsRoundedIcon />, content: "Articles" },
         ],
-        tags,
       },
-    ];
-  } else {
-    categories = [
       {
         id: t("Tools"),
 
@@ -173,12 +165,72 @@ export default function Navigator(props) {
             icon: <DnsRoundedIcon />,
             content: "organisation",
           },
-          { id: t("Users"), icon: <PeopleIcon />, content: "users" },
-          { id: t("Slips"), icon: <DnsRoundedIcon />, content: "BvList" },
+
+          { id: t("Slips"), icon: <DnsRoundedIcon />, content: "Bordereaux" },
           { id: t("Boxes"), icon: <DnsRoundedIcon />, content: "Boites" },
           { id: t("Articles"), icon: <DnsRoundedIcon />, content: "Articles" },
         ],
-        tags,
+      },
+      {
+        id: t("References"),
+        children: [
+          { id: t("Communes"), icon: <CommunesIcon />, content: "communes" },
+          {
+            id: t("Directions"),
+            icon: <DirectionsIcon />,
+            content: "directions",
+          },
+        ],
+      },
+    ];
+  } else {
+    categories = [
+      {
+        id: t("Warehouse"),
+        children: [
+          {
+            id: t("Warehouse"),
+            icon: <PermMediaOutlinedIcon />,
+            active: true,
+            content: "warehouse",
+          },
+        ],
+      },
+      {
+        id: t("Tools"),
+        children: [
+          {
+            id: t("Archiving"),
+            icon: <PermMediaOutlinedIcon />,
+            active: true,
+            content: "Archivage",
+          },
+          {
+            id: t("Organization"),
+            icon: <DnsRoundedIcon />,
+            content: "organisation",
+          },
+          { id: t("Users"), icon: <PeopleIcon />, content: "users" },
+          {
+            id: t("Activities"),
+            icon: <PeopleIcon />,
+            content: "user_activities",
+          },
+          { id: t("Slips"), icon: <DnsRoundedIcon />, content: "Bordereaux" },
+          { id: t("Boxes"), icon: <DnsRoundedIcon />, content: "Boites" },
+          { id: t("Articles"), icon: <DnsRoundedIcon />, content: "Articles" },
+        ],
+      },
+      {
+        id: t("References"),
+        children: [
+          { id: t("Communes"), icon: <CommunesIcon />, content: "communes" },
+          {
+            id: t("Directions"),
+            icon: <DirectionsIcon />,
+            content: "directions",
+          },
+        ],
       },
     ];
   }
@@ -213,57 +265,76 @@ export default function Navigator(props) {
             <ListItem sx={{ py: 2, px: 3 }}>
               <ListItemText sx={{ color: "#fff" }}>{id}</ListItemText>
             </ListItem>
-            {children.map(({ id: childId, icon, active, content }) => (
+            {children.map(({ id: childId, icon, active, content, link }) => (
               <ListItem disablePadding key={childId}>
-                <ListItemButton
-                  selected={active}
-                  sx={item}
-                  onClick={() => props.chooseContent({ content })}
-                >
-                  <ListItemIcon>{icon}</ListItemIcon>
-                  <ListItemText>{childId}</ListItemText>
-                </ListItemButton>
+                {content && (
+                  <ListItemButton
+                    selected={active}
+                    sx={item}
+                    onClick={() => {
+                      props.chooseContent({ content });
+                      Axios.post(
+                        process.env.REACT_APP_HOSTNAME + `/user/activity/`,
+                        { route: content, activity: "userNavigate" },
+                        {
+                          withCredentials: true,
+                          headers: { Authorization: `Bearer ${token}` },
+                        }
+                      );
+                    }}
+                  >
+                    <ListItemIcon>{icon}</ListItemIcon>
+                    <ListItemText>{childId}</ListItemText>
+                  </ListItemButton>
+                )}
+                {/* {link && (
+                  <Link to={link}>
+                    <ListItemButton selected={active} sx={item}>
+                      <ListItemIcon>{icon}</ListItemIcon>
+                      <ListItemText>{childId}</ListItemText>
+                    </ListItemButton>
+                  </Link>
+                )} */}
               </ListItem>
             ))}
-
-            <ListItem sx={{ ...item }}>
-              <ListItemButton onClick={handleClick}>
-                <ListItemIcon>
-                  <TagIcon />
-                </ListItemIcon>
-                <ListItemText sx={{ color: "#fff" }}>{t("Tags")}</ListItemText>
-                {open ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-            </ListItem>
-            <Collapse in={open} timeout="auto" unmountOnExit>
-              {tags &&
-                tags.map((tag) => (
-                  <List component="div" key={tag.id} sx={{ ...item }}>
-                    <ListItemButton
-                      sx={{ pl: 4 }}
-                      selected={index === tag.id}
-                      onClick={async () => {
-                        setIndex(tag.id);
-                        let c = "Tag";
-                        props.chooseContent({ content: "Tag" });
-                        props.chooseTag(tag.id);
-                      }}
-                    >
-                      <ListItemText primary={tag.tag_name} color={tag.color} />
-                      <Chip
-                        label={tag.files.length}
-                        sx={{ bgcolor: tag.color }}
-                        size="small"
-                      />
-                    </ListItemButton>
-                  </List>
-                ))}
-            </Collapse>
 
             <Divider sx={{ mt: 2 }} />
           </Box>
         ))}
 
+        <ListItem sx={{ ...item }}>
+          <ListItemButton onClick={handleClick}>
+            <ListItemIcon>
+              <TagIcon />
+            </ListItemIcon>
+            <ListItemText sx={{ color: "#fff" }}>{t("Tags")}</ListItemText>
+            {open ? <ExpandLess /> : <ExpandMore />}
+          </ListItemButton>
+        </ListItem>
+        <Collapse in={open} timeout="auto" unmountOnExit>
+          {tags &&
+            tags.map((tag) => (
+              <List component="div" key={tag.id} sx={{ ...item }}>
+                <ListItemButton
+                  sx={{ pl: 4 }}
+                  selected={index === tag.id}
+                  onClick={async () => {
+                    setIndex(tag.id);
+                    let c = "Tag";
+                    props.chooseContent({ content: "Tag" });
+                    props.chooseTag(tag.id);
+                  }}
+                >
+                  <ListItemText primary={tag.tag_name} color={tag.color} />
+                  <Chip
+                    label={tag.files.length}
+                    sx={{ bgcolor: tag.color }}
+                    size="small"
+                  />
+                </ListItemButton>
+              </List>
+            ))}
+        </Collapse>
         <ListItem sx={{ ...item, ...itemCategory }}>
           <ListItemButton onClick={() => logout()}>
             <ListItemIcon>
