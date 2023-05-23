@@ -11,10 +11,18 @@ export default function File({ file }) {
   return (
     <div>
       <DocViewer
+        // pluginRenderers={DocViewerRenderers}
+        // documents={selectedDocs.map((f) => ({
+        //   uri: window.URL.createObjectURL(f),    // locahost
+        // }))}
+
+        prefetchMethod="GET"
         pluginRenderers={DocViewerRenderers}
-        documents={selectedDocs.map((f) => ({
-          uri: window.URL.createObjectURL(f),
-        }))}
+        documents={selectedDocs.map((f) => {
+          return {
+            uri: f, // cloud
+          };
+        })}
         config={{
           header: {
             disableHeader: true,
